@@ -1,4 +1,3 @@
-import 'package:e_amazon/provider.dart';
 import 'package:e_amazon/routes/app_routes.dart';
 import 'package:e_amazon/utils/firebase_service.dart';
 import 'package:e_amazon/utils/shared_preference.dart';
@@ -65,6 +64,7 @@ class _LoginState extends ConsumerState<Login> {
                     : DefaultButton(
                       text: 'Login',
                       onPressed: () async {
+                        //firebaseAuth.addProduct();
                         if (formKey.currentState!.validate()) {
                           setState(() {
                             isLoad = true;

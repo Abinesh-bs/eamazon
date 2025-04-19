@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:e_amazon/routes/app_routes.dart';
 import 'package:e_amazon/utils/firebase_service.dart';
@@ -7,6 +8,8 @@ import 'package:e_amazon/widgets/default_button.dart';
 import 'package:firebase_cloud_firestore/firebase_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import '../../model/product_data.dart';
 
 class ProductDetails extends StatefulWidget {
   String productId;
@@ -38,12 +41,12 @@ class _ProductDetailsState extends State<ProductDetails> {
   Future<void> checkWishlist() async {
     if (userId != null && widget.productId.isNotEmpty) {
       final wishlistRef =
-      FirebaseFirestore.instance
-          .collection('wishlists')
-          .doc(userId)
-          .collection('products')
-          .doc(widget.productId)
-          .get();
+          FirebaseFirestore.instance
+              .collection('wishlists')
+              .doc(userId)
+              .collection('products')
+              .doc(widget.productId)
+              .get();
 
       final doc = await wishlistRef;
 
@@ -55,12 +58,12 @@ class _ProductDetailsState extends State<ProductDetails> {
 
   checkSavedCard() async {
     final savedCardDoc =
-    FirebaseFirestore.instance
-        .collection('saved_card')
-        .doc(userId)
-        .collection('products')
-        .doc(widget.productId)
-        .get();
+        FirebaseFirestore.instance
+            .collection('saved_card')
+            .doc(userId)
+            .collection('products')
+            .doc(widget.productId)
+            .get();
     final doc = await savedCardDoc;
     setState(() {
       savedCard = doc.exists;
@@ -82,17 +85,11 @@ class _ProductDetailsState extends State<ProductDetails> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(25.r),
                   border: Border.all(
-                    color: Theme
-                        .of(context)
-                        .colorScheme
-                        .primary,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 child: DefaultButton(
-                  color: Theme
-                      .of(context)
-                      .colorScheme
-                      .primary,
+                  color: Theme.of(context).colorScheme.primary,
 
                   text: savedCard ? "Remove from card" : "Add to card",
                   onPressed: () async {
@@ -119,7 +116,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                       AppRoutes.confirmOrder,
                       arguments: {
                         "productId": widget.productId,
-                        "isFromCart": false
+                        "isFromCart": false,
                       },
                     );
                   }
@@ -131,10 +128,10 @@ class _ProductDetailsState extends State<ProductDetails> {
       ),
       body: StreamBuilder<DocumentSnapshot>(
         stream:
-        FirebaseFirestore.instance
-            .collection('products')
-            .doc(widget.productId)
-            .snapshots(),
+            FirebaseFirestore.instance
+                .collection('products')
+                .doc(widget.productId)
+                .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData && isLoad) {
             return Center(child: CircularProgressIndicator());
@@ -148,19 +145,22 @@ class _ProductDetailsState extends State<ProductDetails> {
                       .collection('products')
                       .doc(widget.productId)
                       .set({
-                    'name': 'Test Product',
-                    'description': 'Description here',
-                    'price': 49.99,
-                    'image': 'https://via.placeholder.com/150',
-                  });
+                        'name': 'Test Product',
+                        'description': 'Description here',
+                        'price': 49.99,
+                        'image': 'https://via.placeholder.com/150',
+                      });
                 },
               ),
             );
           }
-          final product = snapshot.data!.data() as Map<String, dynamic>;
-          final imageUrls = product['images'] as List<dynamic>? ?? [];
-          final specs = product['specs'] as Map<String, dynamic>?;
-          price = product['price'];
+          final product = ProductModel.fromFirestore(
+            snapshot.data!.data() as Map<String, dynamic>,
+            snapshot.data!.id,
+          );
+          final imageUrls = product.images;
+          final specs = product.specs;
+          price = product.price;
           return Container(
             padding: EdgeInsets.only(top: 30.h),
             child: ListView(
@@ -179,17 +179,17 @@ class _ProductDetailsState extends State<ProductDetails> {
                         },
                       ),
                       items:
-                      imageUrls.map((url) {
-                        return Builder(
-                          builder: (BuildContext context) {
-                            return Image.network(
-                              url,
-                              fit: BoxFit.fitHeight,
-                              width: double.infinity,
+                          imageUrls.map((url) {
+                            return Builder(
+                              builder: (BuildContext context) {
+                                return CachedNetworkImage(
+                                  imageUrl: url,
+                                  fit: BoxFit.fitHeight,
+                                  width: double.infinity,
+                                );
+                              },
                             );
-                          },
-                        );
-                      }).toList(),
+                          }).toList(),
                     ),
                     Positioned(
                       left: 15.w,
@@ -264,50 +264,37 @@ class _ProductDetailsState extends State<ProductDetails> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children:
-                        imageUrls
-                            .asMap()
-                            .entries
-                            .map((entry) {
-                          return Container(
-                            width: 8,
-                            height: 8,
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color:
-                              _currentIndex == entry.key
-                                  ? Colors.black
-                                  : Colors.grey.shade400,
-                            ),
-                          );
-                        }).toList(),
+                            imageUrls.asMap().entries.map((entry) {
+                              return Container(
+                                width: 8,
+                                height: 8,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color:
+                                      _currentIndex == entry.key
+                                          ? Colors.black
+                                          : Colors.grey.shade400,
+                                ),
+                              );
+                            }).toList(),
                       ),
                       SizedBox(height: 10.h),
                       Text(
-                        product['name'],
-                        style: Theme
-                            .of(context)
-                            .textTheme
-                            .headlineSmall,
+                        product.name,
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       SizedBox(height: 10.h),
-                      Text(product['description']),
+                      Text(product.description),
                       SizedBox(height: 10.h),
                       Text(
-                        '${product['price']}',
-                        style: Theme
-                            .of(
+                        "₹${product.price}",
+                        style: Theme.of(
                           context,
-                        )
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(
-                          color: Theme
-                              .of(context)
-                              .colorScheme
-                              .primary,
+                        ).textTheme.headlineSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       if (specs != null) ...[
@@ -315,47 +302,39 @@ class _ProductDetailsState extends State<ProductDetails> {
                           padding: EdgeInsets.symmetric(vertical: 8.h),
                           child: Text(
                             "Specification",
-                            style: Theme
-                                .of(context)
-                                .textTheme
-                                .headlineMedium,
+                            style: Theme.of(context).textTheme.headlineMedium,
                           ),
                         ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children:
-                          specs!.entries.map((entry) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                              ),
-                              child: RichText(
-                                text: TextSpan(
-                                  text: '${entry.key}: ',
-                                  style: Theme
-                                      .of(
-                                    context,
-                                  )
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                    fontSize: 13.sp,
-                                    color: Colors.grey.shade700,
+                              specs!.entries.map((entry) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
                                   ),
-                                  children: [
-                                    TextSpan(
-                                      text: entry.value,
-                                      style: Theme
-                                          .of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(fontSize: 13.sp),
+                                  child: RichText(
+                                    text: TextSpan(
+                                      text: '${entry.key}: ',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.copyWith(
+                                        fontSize: 13.sp,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                      children: [
+                                        TextSpan(
+                                          text: entry.value,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(fontSize: 13.sp),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }).toList(),
+                                  ),
+                                );
+                              }).toList(),
                         ),
                       ],
 
@@ -363,17 +342,14 @@ class _ProductDetailsState extends State<ProductDetails> {
                         padding: EdgeInsets.symmetric(vertical: 8.h),
                         child: Text(
                           "Review",
-                          style: Theme
-                              .of(context)
-                              .textTheme
-                              .headlineMedium,
+                          style: Theme.of(context).textTheme.headlineMedium,
                         ),
                       ),
-                      Text(product['review']),
+                      Text(product.review),
                       Row(
                         children: [
                           Icon(Icons.star, color: Colors.amber),
-                          Text(product['rating']),
+                          Text(product.rating),
                         ],
                       ),
                     ],

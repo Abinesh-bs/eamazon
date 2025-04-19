@@ -135,28 +135,25 @@ class FirebaseService {
 
     final product = {
       'id': productId,
-      'name': 'BULLMER',
+      'name': 'Casio watch',
       "description":
-          "Men Floral Print Regular Fit Shirt , BULLMER Trendy Regular Fit Printed Causal Half sleeve Shirt For Men Wrinkle Free , Stretchable , Breathable , Maintenance free , trigene fabric , Soil Resistant",
-      'price': "₹1,999 ",
+          "Casio is an electronics manufacturing company that was founded in 1946 by Tadao Kashio. The brand has a versatile portfolio, from musical instruments and digital cameras to analogue and digital watches. The company rose to popularity quickly after releasing its first-ever product, a cigarette holder, which proved to be a huge success. Casio became involved in electronics in 1954 when they released Japan's first electro-mechanical calculator.",
+      'price': "29999 ",
       "images": [
-        'https://assets.ajio.com/medias/sys_master/root/20240911/cPAa/66e0f0db6f60443f316d0646/-473Wx593H-700401877-cream-MODEL.jpg',
-        'https://assets.ajio.com/medias/sys_master/root/20240911/UhtA/66e0f0db6f60443f316d05d1/-473Wx593H-700401877-cream-MODEL3.jpg',
-
-        'https://assets.ajio.com/medias/sys_master/root/20240911/AiPM/66e0f0db6f60443f316d05ce/-473Wx593H-700401877-cream-MODEL5.jpg',
-
-        'https://assets.ajio.com/medias/sys_master/root/20240911/AiPM/66e0f0db6f60443f316d05ce/-473Wx593H-700401877-cream-MODEL5.jpg',
+        "https://www.casio.com/in/watches/edifice/product.EFB-109D-2AV/",
+        "https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcRHojAC-y2pQTgvNyeVsKG1UiI9UaQrcNYJDnl0ilUoFB-sG_mx1RQ6kpyWNfinrBZIom4SHf2lUCRoiqSzqh0f6nuKMLKA_jg-af3zWGplN2_SFJb6gg8tdlo",
+        "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcRw0TYpozfwSQ6adpwck69Lqq350IUoAPwMXmAziR9LR-3cnGJxtOYYI3YdSep-rsgEe5fYSVHOLqNkTOSjHPzADWb0iCY_Ina3IHcA8DfQ",
+        "https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcQDjiHN3PJGVIoaHDklkjLrV2BRRMsKywHUDbrPkp1iSB9PPAJ6_VtRU9i-9TFNJBcJsIaBTXa6xjY1mBgBpkzJRng9CtRMZUblxyDscWbdll2JNcT9d_Pz9Q",
       ],
-      'review': 'Perfect!,Comfort to wear',
-      'rating': "4.2",
+      'review': 'Light weighted!',
+      'rating': "3.0",
       'specs': {
-        'SLEEVE TYPE':
-            'Short Sleeve. Designed to offer an energetic look, the shirt combines the warmth of comfortable and casual feel. Offering an elevated look, it showcases a perfect fit.',
-        'ENHANCED STRETCH':
-            "This enhanced stretch shirt provides maximum comfort and flexibility. Made with high-quality fabric, This shirt offers a tailored fit and modern design, perfect for any occasion. Upgrade your wardrobe with Campus Sutra's enhanced stretch shirts for a stylish and comfortable look.",
-        'FABRICS':
-            "his shirt is fabricated with top-grade and durable material. Made of fabric that holds its shape throughout the day, lets you have no restriction and feel relaxed.",
-        "Package contains": "1 shirt",
+        'Brand': 'Casio',
+        'Model': 'EFB-109D-2AV',
+        'Brand Color': "Black",
+        'Weight': '127g',
+        'Water resistance': '100-meter water resistance',
+        'Case and bezel material': 'Stainless steel',
       },
     };
     await docRef.set(product);

@@ -1,8 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../model/cart_data.dart';
+import '../../model/product_data.dart';
+import '../../model/user_data.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/shared_preference.dart';
 
@@ -19,22 +23,14 @@ class ConfirmOrder extends StatefulWidget {
 class _ConfirmOrderState extends State<ConfirmOrder> {
   final fireStoreInstance = FirebaseFirestore.instance;
   final user = FirebaseAuth.instance.currentUser;
-
-  String price = '';
-  String userName = '';
-  String phoneNumber = '';
-  String address = '';
-  String postalCode = '';
-  int count = 1;
-  String? userId;
-  bool isLoad = true;
+  UserProfileModel? userProfile;
+  List<CartItemModel> cartItems = [];
   double totalPrice = 0;
-  List<Map<String, dynamic>> cartProducts = [];
+  bool isLoad = true;
 
   @override
   void initState() {
     super.initState();
-    userId = SharedPreferenceHelper.getUserId() ?? "";
     _initialize();
   }
 
@@ -44,7 +40,7 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
     if (widget.productId != null) {
       await _loadSingleProduct();
     } else {
-      await _loadCartProducts();
+      await _loadCartItems();
     }
 
     setState(() {
@@ -54,77 +50,72 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
 
   Future<void> _loadUserData() async {
     if (user != null) {
-      final doc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user!.uid)
-              .get();
-      final data = doc.data();
-      if (data != null) {
-        userName = data['name'] ?? user!.displayName ?? '';
-        phoneNumber = data['phone'] ?? user!.phoneNumber ?? '';
-        address = data['address'] ?? '';
-        postalCode = data['postal_code'] ?? '';
+      final doc = await fireStoreInstance.collection('users').doc(user!.uid).get();
+      if (doc.exists) {
+        userProfile = UserProfileModel.fromFirestore(doc.data()!, user!.uid);
+      } else {
+        userProfile = UserProfileModel(
+          uid: user!.uid,
+          name: user!.displayName ?? '',
+          phone: user!.phoneNumber ?? '',
+          address: '',
+          postalCode: '',
+        );
       }
     }
   }
 
   Future<void> _loadSingleProduct() async {
-    final doc =
-        await fireStoreInstance
-            .collection('products')
-            .doc(widget.productId)
-            .get();
-    final productData = doc.data();
+    final doc = await fireStoreInstance.collection('products').doc(widget.productId).get();
+    if (doc.exists) {
+      final productData = doc.data()!;
+      final product = ProductModel.fromFirestore(productData, widget.productId!);
 
-    if (productData != null) {
-      String cleaned = productData['price'].replaceAll(RegExp(r'[₹,]'), '');
-      double cleanPrice = double.tryParse(cleaned) ?? 0;
+      final savedCardDoc = await fireStoreInstance
+          .collection('saved_card')
+          .doc(user!.uid)
+          .collection('products')
+          .doc(widget.productId)
+          .get();
 
-      final savedCardDoc =
-          await fireStoreInstance
-              .collection('saved_card')
-              .doc(userId)
-              .collection('products')
-              .doc(widget.productId)
-              .get();
+      final count = savedCardDoc.data()?['count']?.toInt() ?? 1;
 
-      count = savedCardDoc.data()?['count'] ?? 1;
-      totalPrice = cleanPrice * count;
+      final cartItem = CartItemModel(
+        productId: widget.productId!,
+        product: product,
+        count: count,
+      );
 
-      cartProducts = [
-        {"product": productData, "count": count, "id": widget.productId},
-      ];
+      totalPrice = double.parse(product.price) * count;
+      cartItems = [cartItem];
     }
   }
 
-  Future<void> _loadCartProducts() async {
-    final snapshot =
-        await fireStoreInstance
-            .collection('saved_card')
-            .doc(userId)
-            .collection('products')
-            .get();
+  Future<void> _loadCartItems() async {
+    final snapshot = await fireStoreInstance
+        .collection('saved_card')
+        .doc(user!.uid)
+        .collection('products')
+        .get();
 
     totalPrice = 0;
+    cartItems = [];
+
     for (var item in snapshot.docs) {
-      var productId = item.id;
-      var productCount = item['count'] ?? 1;
+      final productId = item.id;
+      final cartData = item.data();
+      final productDoc = await fireStoreInstance.collection('products').doc(productId).get();
 
-      var productDoc =
-          await fireStoreInstance.collection('products').doc(productId).get();
-      var productData = productDoc.data();
+      if (productDoc.exists) {
+        final productData = productDoc.data()!;
+        final cartItem = CartItemModel.fromFirestore(
+          productId: productId,
+          cartData: cartData,
+          productData: productData,
+        );
 
-      if (productData != null) {
-        String cleaned = productData['price'].replaceAll(RegExp(r'[₹,]'), '');
-        double cleanPrice = double.tryParse(cleaned) ?? 0;
-        totalPrice += cleanPrice * productCount;
-
-        cartProducts.add({
-          "product": productData,
-          "count": productCount,
-          "id": productId,
-        });
+        totalPrice += double.parse(cartItem.product.price) * cartItem.count;
+        cartItems.add(cartItem);
       }
     }
   }
@@ -136,10 +127,10 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Deliver to:", style: Theme.of(context).textTheme.headlineSmall),
-          Text(userName, style: Theme.of(context).textTheme.titleMedium),
-          Text(address, style: Theme.of(context).textTheme.bodyMedium),
-          Text(postalCode, style: Theme.of(context).textTheme.bodyMedium),
-          Text(phoneNumber, style: Theme.of(context).textTheme.bodyMedium),
+          Text(userProfile?.name ?? '', style: Theme.of(context).textTheme.titleMedium),
+          Text(userProfile?.address ?? '', style: Theme.of(context).textTheme.bodyMedium),
+          Text(userProfile?.postalCode ?? '', style: Theme.of(context).textTheme.bodyMedium),
+          Text(userProfile?.phone ?? '', style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );
@@ -147,15 +138,15 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
 
   Widget buildCartItems() {
     return ListView.builder(
-      physics: NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
-      itemCount: cartProducts.length,
+      itemCount: cartItems.length,
       itemBuilder: (context, index) {
-        var item = cartProducts[index];
-        var product = item['product'];
-        var count = item['count'];
-        var productId = item['id'];
-        var imageUrl = product['images'].first;
+        final cartItem = cartItems[index];
+        final product = cartItem.product;
+        final count = cartItem.count;
+        final productId = cartItem.productId;
+        final imageUrl = product.images.isNotEmpty ? product.images.first : '';
 
         return GestureDetector(
           onTap: () {
@@ -166,14 +157,16 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
             );
           },
           child: ListTile(
-            leading: Image.network(
-              imageUrl,
+            leading: CachedNetworkImage(
+              imageUrl: imageUrl,
               width: 60.h,
               height: 60.h,
               fit: BoxFit.cover,
+              placeholder: (context, url) => const CircularProgressIndicator(),
+              errorWidget: (context, url, error) => const Icon(Icons.error),
             ),
             title: Text(
-              product['name'],
+              product.name,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             subtitle: Text(
@@ -183,7 +176,7 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
               ),
             ),
             trailing: Text(
-              product['price'],
+              "₹${product.price}",
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: Theme.of(context).primaryColor,
               ),
@@ -205,12 +198,12 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Price detail"),
+          const Text("Price detail"),
           Divider(color: Colors.grey.shade300),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Total amount"),
+              const Text("Total amount"),
               Text(
                 "₹${totalPrice.toStringAsFixed(2)}",
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -245,18 +238,17 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "₹${totalPrice.toStringAsFixed(2)}",
+              "\$${totalPrice.toStringAsFixed(2)}",
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: Theme.of(context).primaryColor,
               ),
             ),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+              },
               child: Text(
                 "Confirm Order",
-                style: Theme.of(
-                  context,
-                ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
               ),
             ),
           ],

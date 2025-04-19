@@ -1,13 +1,13 @@
+import 'dart:io';
+
 import 'package:e_amazon/pages/add_to_card.dart';
 import 'package:e_amazon/pages/products/product.dart';
 import 'package:e_amazon/pages/profile.dart';
-import 'package:e_amazon/pages/wishlist.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../routes/app_routes.dart';
-import '../utils/shared_preference.dart';
+
 
 class Home extends ConsumerStatefulWidget {
   const Home({super.key});
@@ -86,7 +86,7 @@ class _HomeState extends ConsumerState<Home> {
                 onPressed: () {
                   Navigator.of(context).pop();
                   Future.delayed(const Duration(milliseconds: 200), () {
-                    // Helper().closeApp();
+                  exit(0);
                   });
                 },
                 color: Theme.of(context).colorScheme.primary,

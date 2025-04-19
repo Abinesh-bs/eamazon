@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../model/user_data.dart';
 import '../../widgets/custom_form_field.dart';
 
 class EditProfile extends StatefulWidget {
@@ -16,12 +17,10 @@ class EditProfile extends StatefulWidget {
 
 class _EditProfileState extends State<EditProfile> {
   final formKey = GlobalKey<FormState>();
-
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
   final addressController = TextEditingController();
-  final postalCode = TextEditingController();
-
+  final postalCodeController = TextEditingController();
   final user = FirebaseAuth.instance.currentUser;
 
   @override
@@ -30,70 +29,72 @@ class _EditProfileState extends State<EditProfile> {
     _loadUserData();
   }
 
-  buildTitle(title) {
+  Widget buildTitle(String title) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 5.h),
       child: Text(
         title,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
       ),
     );
   }
 
   Future<void> _loadUserData() async {
     if (user != null) {
-      final doc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user!.uid)
-              .get();
-      final data = doc.data();
-      if (data != null) {
-        nameController.text = data['name'] ?? user!.displayName ?? '';
-        phoneController.text = data['phone'] ?? user!.phoneNumber ?? '';
-        addressController.text = data['address'] ?? '';
-        postalCode.text = data['postal_code'] ?? '';
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .get();
+      if (doc.exists) {
+        final userProfile = UserProfileModel.fromFirestore(doc.data()!, user!.uid);
+        nameController.text = userProfile.name.isNotEmpty ? userProfile.name : user!.displayName ?? '';
+        phoneController.text = userProfile.phone.isNotEmpty ? userProfile.phone : user!.phoneNumber ?? '';
+        addressController.text = userProfile.address;
+        postalCodeController.text = userProfile.postalCode;
+      } else {
+        nameController.text = user!.displayName ?? '';
+        phoneController.text = user!.phoneNumber ?? '';
       }
     }
   }
 
   Future<void> _updateProfile() async {
     if (formKey.currentState!.validate()) {
-      await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
-        'name': nameController.text.trim(),
-        'phone': phoneController.text.trim(),
-        'address': addressController.text.trim(),
-        'postal_code': postalCode.text.trim(),
-      }, SetOptions(merge: true));
+      final userProfile = UserProfileModel(
+        uid: user!.uid,
+        name: nameController.text.trim(),
+        phone: phoneController.text.trim(),
+        address: addressController.text.trim(),
+        postalCode: postalCodeController.text.trim(),
+      );
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Profile updated")));
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .set(userProfile.toJson(), SetOptions(merge: true));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profile updated")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar: Expanded(
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 5.h),
-          child: ElevatedButton(
-            onPressed: _updateProfile,
-            child: Text(
-              "Update Profile",
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(color: Colors.white),
-            ),
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 5.h),
+        width: MediaQuery.sizeOf(context).width,
+        child: ElevatedButton(
+          onPressed: _updateProfile,
+          child: Text(
+            "Update Profile",
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
           ),
         ),
       ),
-      appBar: AppBar(title: Text("Edit Profile")),
+      appBar: AppBar(title: const Text("Edit Profile")),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(0),
         child: Form(
           key: formKey,
           child: Column(
@@ -103,45 +104,33 @@ class _EditProfileState extends State<EditProfile> {
               CustomTextFormField(
                 controller: nameController,
                 hintText: 'Name',
-                validator: (value) {
-                  return Validator.requiredField(value);
-                },
+                validator: (value) => Validator.requiredField(value),
               ),
               SizedBox(height: 10.h),
               buildTitle("Phone number"),
-
               CustomTextFormField(
                 controller: phoneController,
                 hintText: 'Phone number',
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (value) {
-                  return Validator.validatePhoneNumber(value!);
-                },
+                validator: (value) => Validator.validatePhoneNumber(value!),
               ),
               SizedBox(height: 10.h),
               buildTitle("Address"),
-
               CustomTextFormField(
                 controller: addressController,
                 hintText: 'Address',
-                validator: (value) {
-                  return Validator.requiredField(value!);
-                },
+                validator: (value) => Validator.requiredField(value!),
               ),
               SizedBox(height: 10.h),
               buildTitle("Postal code"),
-
               CustomTextFormField(
-                controller: postalCode,
+                controller: postalCodeController,
                 hintText: 'Postal code',
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (value) {
-                  return Validator.requiredField(value!);
-                },
+                validator: (value) => Validator.requiredField(value!),
               ),
-              SizedBox(height: 10.h),
             ],
           ),
         ),

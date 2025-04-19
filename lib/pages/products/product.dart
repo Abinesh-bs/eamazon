@@ -1,4 +1,4 @@
-import 'package:e_amazon/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:e_amazon/routes/app_routes.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_amazon/utils/reponsive_size.dart';
@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../model/product_data.dart';
+import '../../provider/provider.dart';
 import '../../widgets/default_button.dart';
 
 class Product extends ConsumerStatefulWidget {
@@ -26,7 +28,7 @@ class _ProductState extends ConsumerState<Product> {
     '1': 'Shirts',
     '2': 'Mobile',
     '3': 'Laptop',
-    '4': 'Shoes',
+    '4': 'Camera',
     '5': 'Watches',
   };
 
@@ -34,6 +36,155 @@ class _ProductState extends ConsumerState<Product> {
   initState() {
     selectedCategory = SharedPreferenceHelper.getCategories() ?? [];
     super.initState();
+  }
+
+  Future<List<ProductModel>> _fetchForYouProducts() async {
+    try {
+      final snapshot =
+          await fireStoreInstance.collection('products').limit(10).get();
+      return snapshot.docs
+          .map((doc) {
+            try {
+              return ProductModel.fromFirestore(doc.data(), doc.id);
+            } catch (e) {
+              print('Error parsing For You product ${doc.id}: $e');
+              return null;
+            }
+          })
+          .where(
+            (product) =>
+                product != null &&
+                product.name.isNotEmpty &&
+                product.images.isNotEmpty,
+          )
+          .cast<ProductModel>()
+          .toList();
+    } catch (e) {
+      print('Error fetching For You products: $e');
+      return [];
+    }
+  }
+
+  Widget _buildForYouSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+          child: Text(
+            'For You',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ),
+        SizedBox(
+          height: 150.h,
+          child: FutureBuilder<List<ProductModel>>(
+            future: _fetchForYouProducts(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError ||
+                  !snapshot.hasData ||
+                  snapshot.data!.isEmpty) {
+                return const Center(child: Text('No recommended products'));
+              }
+
+              final products = snapshot.data!;
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                itemCount: products.length,
+                itemBuilder: (context, index) {
+                  final product = products[index];
+                  final imageUrl =
+                      product.images.isNotEmpty ? product.images.first : '';
+
+                  return GestureDetector(
+                    onTap: () {
+                      focusScope.unfocus();
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.productDetail,
+                        arguments: {"id": product.id},
+                      );
+                    },
+                    child: Container(
+                      width: 120.w,
+                      margin: EdgeInsets.only(right: 10.w),
+                      child: Card(
+                        elevation: 0.9,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(10.r),
+                              ),
+                              child: CachedNetworkImage(
+                                imageUrl: imageUrl,
+                                height: 80.h,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                placeholder:
+                                    (context, url) =>
+                                        const CircularProgressIndicator(),
+                                errorWidget:
+                                    (context, url, error) =>
+                                        const Icon(Icons.error),
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.all(8.w),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    product.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(height: 2.h),
+                                  Text(
+                                    product.description,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: Colors.grey.shade600),
+                                  ),
+                                  SizedBox(height: 2.h),
+                                  Text(
+                                    '₹${product.price}',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.headlineSmall?.copyWith(
+                                      color: Theme.of(context).primaryColor,
+                                      fontSize: 13.sp,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        SizedBox(height: 16.h),
+      ],
+    );
   }
 
   buildCategory(setState) {
@@ -97,7 +248,8 @@ class _ProductState extends ConsumerState<Product> {
                   ),
                 ),
                 appBar: AppBar(
-                  automaticallyImplyLeading: false,
+                  scrolledUnderElevation: 0,
+                  elevation: 0,
                   title: Row(
                     children: [
                       Text(
@@ -208,85 +360,105 @@ class _ProductState extends ConsumerState<Product> {
           ],
         ),
       ),
-      body: GestureDetector(
-        onTap: () {
-          focusScope.unfocus();
-        },
-        child: StreamBuilder(
-          stream: fireStoreInstance.collection('products').snapshots(),
-          builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final products =
-                snapshot.data!.docs.where((doc) {
-                  final name = doc['name'].toString().toLowerCase();
-                  final categoryMap = doc['category'] as Map;
-                  final categoryId = categoryMap.keys.first.toString();
-
-                  final matchesSearch = name.contains(searchQuery);
-                  final matchesCategory =
-                      selectedCategory.isEmpty ||
-                      selectedCategory.contains(categoryId);
-
-                  return matchesSearch && matchesCategory;
-                }).toList();
-            if (products.isEmpty) {
-              return Center(child: Text("No product found"));
-            }
-            return ListView.builder(
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                final product = products[index];
-                final imageList = product['images'] as List<dynamic>? ?? [];
-                final imageUrl =
-                    imageList.isNotEmpty
-                        ? imageList.first
-                        : 'https://via.placeholder.com/60';
-
-                return GestureDetector(
-                  onTap: () {
-                    focusScope.unfocus();
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.productDetail,
-                      arguments: {"id": product['id']},
-                    );
-                  },
-                  child: ListTile(
-                    leading: Image.network(
-                      imageUrl,
-                      width: ResponsiveSize.isMobile(context) ? 60.w : 100.w,
-                      height: ResponsiveSize.isMobile(context) ? 60.h : 150.h,
-                      fit: BoxFit.cover,
-                    ),
-                    title: Text(
-                      product['name'],
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    subtitle: Text(
-                      product['description'],
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    trailing: Text(
-                      "\$${product['price'].toString()}",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context).primaryColor,
-                        fontSize: 13.sp,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
+      body: SingleChildScrollView(
+        child: GestureDetector(
+          onTap: () {
+            focusScope.unfocus();
           },
+          child: Column(
+            children: [
+              _buildForYouSection(),
+              StreamBuilder(
+                stream: fireStoreInstance.collection('products').snapshots(),
+                builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final products =
+                      snapshot.data!.docs
+                          .map(
+                            (doc) => ProductModel.fromFirestore(
+                              doc.data() as Map<String, dynamic>,
+                              doc.id,
+                            ),
+                          )
+                          .where((product) {
+                            final matchesSearch = product.name
+                                .toLowerCase()
+                                .contains(searchQuery);
+                            final matchesCategory =
+                                selectedCategory.isEmpty ||
+                                selectedCategory.contains(product.categoryId);
+                            return matchesSearch && matchesCategory;
+                          })
+                          .toList();
+                  if (products.isEmpty) {
+                    return Center(child: Text("No product found"));
+                  }
+                  return ListView.builder(
+                    physics: NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      final imageList = product.images;
+                      final imageUrl =
+                          imageList.isNotEmpty ? imageList.first : '';
+                      print(imageUrl);
+                      return GestureDetector(
+                        onTap: () {
+                          focusScope.unfocus();
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.productDetail,
+                            arguments: {"id": product.id},
+                          );
+                        },
+                        child: ListTile(
+                          leading: CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            width:
+                                ResponsiveSize.isMobile(context) ? 60.w : 100.w,
+                            height:
+                                ResponsiveSize.isMobile(context) ? 60.h : 150.h,
+                            fit: BoxFit.cover,
+                            progressIndicatorBuilder:
+                                (context, url, downloadProgress) =>
+                                    CircularProgressIndicator(
+                                      value: downloadProgress.progress,
+                                    ),
+                            errorWidget:
+                                (context, url, error) => Icon(Icons.error),
+                          ),
+                          title: Text(
+                            product.name,
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          subtitle: Text(
+                            product.description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Colors.grey.shade600),
+                          ),
+                          trailing: Text(
+                            "₹${product.price.toString()}",
+                            style: Theme.of(
+                              context,
+                            ).textTheme.headlineSmall?.copyWith(
+                              color: Theme.of(context).primaryColor,
+                              fontSize: 13.sp,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
