@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "948737216499",
+    "project_id": "e-5d676",
+    "storage_bucket": "e-5d676.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:948737216499:android:f3207c65639ff8d1478c86",
+        "android_client_info": {
+          "package_name": "com.example.e_amazon"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "948737216499-chib0g26tjob08sdo6vp38vn2drdtnhc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.e_amazon",
+            "certificate_hash": "589d02b783b5fbaeceb0ac07ea336cbed4a0efc0"
+          }
+        },
+        {
+          "client_id": "948737216499-s6u0dlvmu7k95drn2msq06udedqis250.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.e_amazon",
+            "certificate_hash": "42faaead394278bf408c53e8607f23b90e855a94"
+          }
+        },
+        {
+          "client_id": "948737216499-0rlal03tl2q1jld87c41o9j7vub2ppo5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNJdaP6kyOYRVkxbniOxgBXFnyhk2-G4M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "948737216499-0rlal03tl2q1jld87c41o9j7vub2ppo5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "948737216499-tun99962h6n8s52lheq14vohb54k3jb2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.eAmazon"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

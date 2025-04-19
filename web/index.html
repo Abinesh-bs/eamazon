@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!--
+      If you are serving your web app in a path other than the root, change the
+      href value below to reflect the base path you are serving from.
+
+      The path provided below has to start and end with a slash "/" in order for
+      it to work correctly.
+
+      For more details:
+      * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+      This is a placeholder for base href that will be replaced by the value of
+      the `--base-href` argument provided to `flutter build`.
+    -->
+    <base href="/eamazon.github.io/">
+    <meta charset="UTF-8">
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+    <meta content="A new Flutter project." name="description">
+
+    <!-- iOS meta tags & icons -->
+    <meta content="yes" name="mobile-web-app-capable">
+    <meta content="black" name="apple-mobile-web-app-status-bar-style">
+    <meta content="e_amazon" name="apple-mobile-web-app-title">
+    <link href="icons/Icon-192.png" rel="apple-touch-icon">
+    <link href="manifest.json" rel="manifest">
+    <!-- Favicon -->
+    <link href="favicon.png" rel="icon" type="image/png"/>
+
+    <meta content="948737216499-0rlal03tl2q1jld87c41o9j7vub2ppo5.apps.googleusercontent.com"
+          name="google-signin-client_id">
+    <title>e_amazon</title>
+    <link href="manifest.json" rel="manifest">
+</head>
+<body>
+<script defer src="flutter_bootstrap.js"></script>
+<script defer src="flutter.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+<script>
+    const firebaseConfig = {
+    apiKey: 'AIzaSyDFFTa5H5BE1Z_xzq3F0DNTM8AxL2ZmvF4',
+    appId: '1:948737216499:web:9d8e64de1f9bb941478c86',
+    messagingSenderId: '948737216499',
+    projectId: 'e-5d676',
+    authDomain: 'e-5d676.firebaseapp.com',
+    storageBucket: 'e-5d676.firebasestorage.app',
+    measurementId: 'G-Z37HQM74BZ',
+    };
+    firebase.initializeApp(firebaseConfig);
+</script>
+</body>
+</html>
