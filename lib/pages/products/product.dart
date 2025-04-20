@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:e_amazon/routes/app_routes.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:e_amazon/utils/firebase_service.dart';
 import 'package:e_amazon/utils/reponsive_size.dart';
 import 'package:e_amazon/utils/shared_preference.dart';
 import 'package:e_amazon/widgets/custom_form_field.dart';
@@ -65,125 +67,188 @@ class _ProductState extends ConsumerState<Product> {
     }
   }
 
-  Widget _buildForYouSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-          child: Text(
-            'For You',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+  Widget buildCarousel() {
+    return StreamBuilder(
+      stream: fireStoreInstance.collection("home_data").snapshots(),
+      builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return SizedBox(
+            height: ResponsiveSize.isMobile(context) ? 200.h : 300.h,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError) {
+          return SizedBox(
+            height: ResponsiveSize.isMobile(context) ? 200.h : 300.h,
+            child: Center(child: Text('Error loading carousel')),
+          );
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return SizedBox(
+            height: ResponsiveSize.isMobile(context) ? 200.h : 300.h,
+            child: Center(child: Text('No carousel images')),
+          );
+        }
+        return SizedBox(
+          height:
+              ResponsiveSize.isMobile(context)
+                  ? 200.h
+                  : MediaQuery.sizeOf(context).height * 0.6,
+          width: MediaQuery.sizeOf(context).width,
+          child: CarouselSlider(
+            items:
+                snapshot.data!.docs.map((value) {
+                  final data = value.data() as Map<String, dynamic>;
+                  final imageUrl = data['image'] ?? '';
+                  return CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    width: MediaQuery.sizeOf(context).width,
+                    height:
+                        ResponsiveSize.isMobile(context)
+                            ? 200.h
+                            : MediaQuery.sizeOf(context).height * 0.9,
+
+                    placeholder:
+                        (context, url) =>
+                            Center(child: CircularProgressIndicator()),
+                    errorWidget: (context, url, error) => Icon(Icons.error),
+                  );
+                }).toList(),
+            options: CarouselOptions(
+              viewportFraction: 1,
+              autoPlay: true,
+              scrollPhysics: ClampingScrollPhysics(),
+            ),
           ),
-        ),
-        SizedBox(
-          height: 150.h,
-          child: FutureBuilder<List<ProductModel>>(
-            future: _fetchForYouProducts(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError ||
-                  !snapshot.hasData ||
-                  snapshot.data!.isEmpty) {
-                return const Center(child: Text('No recommended products'));
-              }
+        );
+      },
+    );
+  }
 
-              final products = snapshot.data!;
-              return ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                itemCount: products.length,
-                itemBuilder: (context, index) {
-                  final product = products[index];
-                  final imageUrl =
-                      product.images.isNotEmpty ? product.images.first : '';
+  Widget buildForYouSection() {
+    return SizedBox(
+      width: MediaQuery.sizeOf(context).width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: ResponsiveSize.isMobile(context) ? 170.h : 450.h,
+            child: FutureBuilder<List<ProductModel>>(
+              future: _fetchForYouProducts(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError ||
+                    !snapshot.hasData ||
+                    snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No recommended products'));
+                }
 
-                  return GestureDetector(
-                    onTap: () {
-                      focusScope.unfocus();
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.productDetail,
-                        arguments: {"id": product.id},
-                      );
-                    },
-                    child: Container(
-                      width: 120.w,
-                      margin: EdgeInsets.only(right: 10.w),
-                      child: Card(
-                        elevation: 0.9,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(10.r),
+                final products = snapshot.data!;
+                return ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w),
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                    final product = products[index];
+                    final imageUrl =
+                        product.images.isNotEmpty ? product.images.first : '';
+
+                    return GestureDetector(
+                      onTap: () {
+                        focusScope.unfocus();
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.productDetail,
+                          arguments: {"id": product.id},
+                        );
+                      },
+                      child: Container(
+                        width: ResponsiveSize.isMobile(context) ? 140.w : 250.w,
+                        margin: EdgeInsets.only(right: 10.w),
+                        child: Card(
+                          elevation: 0.9,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(10.r),
+                                ),
+                                child: CachedNetworkImage(
+                                  imageUrl: imageUrl,
+                                  height:
+                                      ResponsiveSize.isMobile(context)
+                                          ? 100.h
+                                          : 320.h,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  placeholder:
+                                      (context, url) =>
+                                          const CircularProgressIndicator(),
+                                  errorWidget:
+                                      (context, url, error) =>
+                                          const Icon(Icons.error),
+                                ),
                               ),
-                              child: CachedNetworkImage(
-                                imageUrl: imageUrl,
-                                height: 80.h,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                placeholder:
-                                    (context, url) =>
-                                        const CircularProgressIndicator(),
-                                errorWidget:
-                                    (context, url, error) =>
-                                        const Icon(Icons.error),
-                              ),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.all(8.w),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    product.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                  SizedBox(height: 2.h),
-                                  Text(
-                                    product.description,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(color: Colors.grey.shade600),
-                                  ),
-                                  SizedBox(height: 2.h),
-                                  Text(
-                                    '₹${product.price}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.headlineSmall?.copyWith(
-                                      color: Theme.of(context).primaryColor,
-                                      fontSize: 13.sp,
+                              Padding(
+                                padding: EdgeInsets.all(8.w),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      product.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    SizedBox(height: 2.h),
+                                    Text(
+                                      product.description,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.copyWith(
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    SizedBox(height: 2.h),
+                                    Text(
+                                      '₹${product.price}',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.headlineSmall?.copyWith(
+                                        color: Theme.of(context).primaryColor,
+                                        fontSize: 13.sp,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              );
-            },
+                    );
+                  },
+                );
+              },
+            ),
           ),
-        ),
-        SizedBox(height: 16.h),
-      ],
+          SizedBox(height: 16.h),
+        ],
+      ),
     );
   }
 
@@ -332,13 +397,23 @@ class _ProductState extends ConsumerState<Product> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        titleSpacing: 0,
+        titleSpacing: ResponsiveSize.isMobile(context) ? 5.w : 15.w,
         automaticallyImplyLeading: false,
         title: Row(
           children: [
+            if (!ResponsiveSize.isMobile(context))
+              Text(
+                "EAmazon",
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Theme.of(context).primaryColor,
+                  fontSize: ResponsiveSize.isMobile(context) ? 12.sp : 16.sp,
+                ),
+              ),
             SizedBox(
-              width: MediaQuery.sizeOf(context).width * 0.92,
-              height: ResponsiveSize.isMobile(context) ? 55.h : 70.h,
+              width:
+                  MediaQuery.sizeOf(context).width *
+                  (ResponsiveSize.isMobile(context) ? 0.88 : 0.9),
+              height: ResponsiveSize.isMobile(context) ? 53.h : 70.h,
               child: CustomTextFormField(
                 hintText: "Search",
                 focusScope: focusScope,
@@ -366,8 +441,31 @@ class _ProductState extends ConsumerState<Product> {
             focusScope.unfocus();
           },
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildForYouSection(),
+              SizedBox(
+                height: ResponsiveSize.isMobile(context) ? 300.h : 800.h,
+                child: Stack(
+                  children: [
+                    buildCarousel(),
+                    Positioned(
+                      bottom: 0.h,
+                      left: 0,
+                      right: 0,
+                      child: buildForYouSection(),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                child: Text(
+                  'Featured',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
               StreamBuilder(
                 stream: fireStoreInstance.collection('products').snapshots(),
                 builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
@@ -405,7 +503,6 @@ class _ProductState extends ConsumerState<Product> {
                       final imageList = product.images;
                       final imageUrl =
                           imageList.isNotEmpty ? imageList.first : '';
-                      print(imageUrl);
                       return GestureDetector(
                         onTap: () {
                           focusScope.unfocus();
@@ -457,6 +554,7 @@ class _ProductState extends ConsumerState<Product> {
                   );
                 },
               ),
+              SizedBox(height: 15.h),
             ],
           ),
         ),

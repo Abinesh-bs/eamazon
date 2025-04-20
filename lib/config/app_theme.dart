@@ -19,7 +19,7 @@ class AppTheme {
       color: Colors.black,
     ),
     bodySmall: GoogleFonts.dmSans(
-      fontSize: kIsWeb ? 16.sp : 12.sp,
+      fontSize: kIsWeb ? 15.sp : 12.sp,
       fontWeight: FontWeight.w400,
       color: Colors.black,
     ),
@@ -67,7 +67,7 @@ class AppTheme {
       color: Colors.white,
     ),
     bodySmall: GoogleFonts.dmSans(
-      fontSize: kIsWeb ? 16.sp : 12.sp,
+      fontSize: kIsWeb ? 15.sp : 12.sp,
       fontWeight: FontWeight.w400,
       color: Colors.white,
     ),

@@ -50,7 +50,8 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
 
   Future<void> _loadUserData() async {
     if (user != null) {
-      final doc = await fireStoreInstance.collection('users').doc(user!.uid).get();
+      final doc =
+          await fireStoreInstance.collection('users').doc(user!.uid).get();
       if (doc.exists) {
         userProfile = UserProfileModel.fromFirestore(doc.data()!, user!.uid);
       } else {
@@ -66,17 +67,25 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
   }
 
   Future<void> _loadSingleProduct() async {
-    final doc = await fireStoreInstance.collection('products').doc(widget.productId).get();
+    final doc =
+        await fireStoreInstance
+            .collection('products')
+            .doc(widget.productId)
+            .get();
     if (doc.exists) {
       final productData = doc.data()!;
-      final product = ProductModel.fromFirestore(productData, widget.productId!);
+      final product = ProductModel.fromFirestore(
+        productData,
+        widget.productId!,
+      );
 
-      final savedCardDoc = await fireStoreInstance
-          .collection('saved_card')
-          .doc(user!.uid)
-          .collection('products')
-          .doc(widget.productId)
-          .get();
+      final savedCardDoc =
+          await fireStoreInstance
+              .collection('saved_card')
+              .doc(user!.uid)
+              .collection('products')
+              .doc(widget.productId)
+              .get();
 
       final count = savedCardDoc.data()?['count']?.toInt() ?? 1;
 
@@ -92,11 +101,12 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
   }
 
   Future<void> _loadCartItems() async {
-    final snapshot = await fireStoreInstance
-        .collection('saved_card')
-        .doc(user!.uid)
-        .collection('products')
-        .get();
+    final snapshot =
+        await fireStoreInstance
+            .collection('saved_card')
+            .doc(user!.uid)
+            .collection('products')
+            .get();
 
     totalPrice = 0;
     cartItems = [];
@@ -104,7 +114,8 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
     for (var item in snapshot.docs) {
       final productId = item.id;
       final cartData = item.data();
-      final productDoc = await fireStoreInstance.collection('products').doc(productId).get();
+      final productDoc =
+          await fireStoreInstance.collection('products').doc(productId).get();
 
       if (productDoc.exists) {
         final productData = productDoc.data()!;
@@ -127,10 +138,22 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Deliver to:", style: Theme.of(context).textTheme.headlineSmall),
-          Text(userProfile?.name ?? '', style: Theme.of(context).textTheme.titleMedium),
-          Text(userProfile?.address ?? '', style: Theme.of(context).textTheme.bodyMedium),
-          Text(userProfile?.postalCode ?? '', style: Theme.of(context).textTheme.bodyMedium),
-          Text(userProfile?.phone ?? '', style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            userProfile?.name ?? '',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          Text(
+            userProfile?.address ?? '',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          Text(
+            userProfile?.postalCode ?? '',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          Text(
+            userProfile?.phone ?? '',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ],
       ),
     );
@@ -238,17 +261,18 @@ class _ConfirmOrderState extends State<ConfirmOrder> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "\$${totalPrice.toStringAsFixed(2)}",
+              "₹${totalPrice.toStringAsFixed(2)}",
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: Theme.of(context).primaryColor,
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-              },
+              onPressed: () {},
               child: Text(
                 "Confirm Order",
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.copyWith(color: Colors.white),
               ),
             ),
           ],

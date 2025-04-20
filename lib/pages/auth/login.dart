@@ -1,5 +1,6 @@
 import 'package:e_amazon/routes/app_routes.dart';
 import 'package:e_amazon/utils/firebase_service.dart';
+import 'package:e_amazon/utils/reponsive_size.dart';
 import 'package:e_amazon/utils/shared_preference.dart';
 import 'package:e_amazon/utils/validator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -131,8 +132,9 @@ class _LoginState extends ConsumerState<Login> {
                       children: [
                         Image.network(
                           "https://pngimg.com/uploads/google/google_PNG19635.png",
-                          height: 25.h,
-                          width: 25.h,
+                          height:
+                              ResponsiveSize.isMobile(context) ? 28.h : 50.h,
+                          width: ResponsiveSize.isMobile(context) ? 28.h : 50.h,
                         ),
                         Text(
                           "Continue with google",

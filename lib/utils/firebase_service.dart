@@ -9,20 +9,19 @@ class FirebaseService {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email'],
     clientId:
-        "948737216499-0rlal03tl2q1jld87c41o9j7vub2ppo5.apps.googleusercontent.com",
+    "948737216499-0rlal03tl2q1jld87c41o9j7vub2ppo5.apps.googleusercontent.com",
   );
 
   Future<String> handleGoogleSignIn() async {
     try {
       await _googleSignIn.signOut();
-      print("object");
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         return "Google sign-in failed";
       }
 
       final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      await googleUser.authentication;
 
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -33,38 +32,41 @@ class FirebaseService {
         credential,
       );
       final User? user = userCredential.user;
-      print("useree");
 
       if (user != null) {
         SharedPreferenceHelper.setUserId(user.uid);
-        print("objecsasast");
 
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        final userData = {
           'email': user.email,
           'name': user.displayName,
-          'phone': user.phoneNumber,
+          if (user.phoneNumber != null) 'phone': user.phoneNumber,
           'createdAt': FieldValue.serverTimestamp(),
-        });
+        };
+
+        final userDocRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid);
+        final docSnapshot = await userDocRef.get();
+        if (!docSnapshot.exists) {
+          await userDocRef.set(userData);
+        } else {
+          await userDocRef.set(userData, SetOptions(merge: true));
+        }
 
         return 'Success';
       }
       return "User not found";
     } on FirebaseAuthException catch (e) {
-      print("errreeer");
       return _handleFirebaseError(e);
     } catch (e) {
-      print("unkonw");
-      print(e.toString());
       return "An unknown error occurred.";
     }
   }
 
-  Future<String?> register(
-    String email,
-    String password,
-    String name,
-    String phone,
-  ) async {
+  Future<String?> register(String email,
+      String password,
+      String name,
+      String phone,) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -100,7 +102,7 @@ class FirebaseService {
         SharedPreferenceHelper.setUserId(userId);
       }
 
-      return null; // Success
+      return null;
     } on FirebaseAuthException catch (e) {
       return _handleFirebaseError(e);
     } catch (e) {
@@ -130,14 +132,14 @@ class FirebaseService {
   Future<void> addProduct() async {
     final collection = _fireStore.collection('products');
 
-    final docRef = collection.doc(); // generate document ID
+    final docRef = collection.doc();
     final productId = docRef.id;
 
     final product = {
       'id': productId,
       'name': 'Casio watch',
       "description":
-          "Casio is an electronics manufacturing company that was founded in 1946 by Tadao Kashio. The brand has a versatile portfolio, from musical instruments and digital cameras to analogue and digital watches. The company rose to popularity quickly after releasing its first-ever product, a cigarette holder, which proved to be a huge success. Casio became involved in electronics in 1954 when they released Japan's first electro-mechanical calculator.",
+      "Casio is an electronics manufacturing company that was founded in 1946 by Tadao Kashio. The brand has a versatile portfolio, from musical instruments and digital cameras to analogue and digital watches. The company rose to popularity quickly after releasing its first-ever product, a cigarette holder, which proved to be a huge success. Casio became involved in electronics in 1954 when they released Japan's first electro-mechanical calculator.",
       'price': "29999 ",
       "images": [
         "https://www.casio.com/in/watches/edifice/product.EFB-109D-2AV/",
@@ -159,11 +161,55 @@ class FirebaseService {
     await docRef.set(product);
   }
 
-  Future<void> _toggleProductInCollection(
-    String userId,
-    String productId,
-    String collectionName,
-  ) async {
+  Future<void> addHomeData() async {
+    /*    final collection = _fireStore.collection('home_data');
+
+    final docRef = collection.doc();
+    final productId = docRef.id;*/
+
+    final List<Map<String, dynamic>> homeItems = [
+      {
+        'image':
+        'https://images-eu.ssl-images-amazon.com/images/G/31/img22/Wireless/devjyoti/GW/Uber/Nov/uber_new_high._CB537689643_.jpg',
+      },
+      {
+        'image':
+        "https://images-eu.ssl-images-amazon.com/images/G/31/OHL/24/BAU/feb/PC_hero_1_2x_1._CB582889946_.jpg",
+      },
+      {
+        'image':
+        'https://images-eu.ssl-images-amazon.com/images/G/31/img22/Events/Schoolfromhome/GWhero/1242x600_Eng._CB661597880_.jpg',
+      },
+      {
+        'image':
+        "https://images-eu.ssl-images-amazon.com/images/G/31/img24/Beauty/Hero/Shampoos__conditioners_pc._CB547405360_.png                                                                                                                                                                                                                                                                                                                                                                                                                                                 ",
+      },
+    ];
+    await addHomeData1(homeItems);
+  }
+
+  Future<void> addHomeData1(List<Map<String, dynamic>> items) async {
+    try {
+      final collection = _fireStore.collection('home_data');
+      final batch = _fireStore.batch();
+
+      for (var item in items) {
+        final docRef = collection.doc();
+        final product = {'id': docRef.id, 'image': item['image'] ?? ''};
+        batch.set(docRef, product);
+      }
+
+      await batch.commit();
+      print('Successfully added ${items.length} items to home_data');
+    } catch (e) {
+      print('Error adding home_data: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> toggleProductInCollection(String userId,
+      String productId,
+      String collectionName,) async {
     if (productId.isNotEmpty) {
       final productRef = _fireStore
           .collection(collectionName)
@@ -181,7 +227,7 @@ class FirebaseService {
   }
 
   Future<void> toggleWishlist(String userId, String productId) {
-    return _toggleProductInCollection(userId, productId, 'wishlists');
+    return toggleProductInCollection(userId, productId, 'wishlists');
   }
 
   Future<void> addToCart({
@@ -195,9 +241,7 @@ class FirebaseService {
         .collection('products')
         .doc(productId);
 
-    await cartItemRef.set({
-      'count': count,
-    }, SetOptions(merge: true)); // merges if item already exists
+    await cartItemRef.set({'count': count}, SetOptions(merge: true));
   }
 
   Future<void> incrementCartItem({
@@ -250,11 +294,11 @@ class FirebaseService {
 
   Future<List<String>> getWishlistProductIds(String userId) async {
     final snapshot =
-        await _fireStore
-            .collection('wishlists')
-            .doc(userId)
-            .collection('products')
-            .get();
+    await _fireStore
+        .collection('wishlists')
+        .doc(userId)
+        .collection('products')
+        .get();
 
     return snapshot.docs.map((doc) => doc['productId'] as String).toList();
   }
