@@ -73,7 +73,7 @@ class _ProductState extends ConsumerState<Product> {
       builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return SizedBox(
-            height: ResponsiveSize.isMobile(context) ? 200.h : 300.h,
+            height: ResponsiveSize.isMobile(context) ? 40.h : 80.h,
             child: Center(child: CircularProgressIndicator()),
           );
         }

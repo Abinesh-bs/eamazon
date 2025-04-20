@@ -169,7 +169,8 @@ class _ProductDetailsState extends State<ProductDetails> {
                   children: [
                     CarouselSlider(
                       options: CarouselOptions(
-                        height: 250.h,
+                        height:
+                            ResponsiveSize.isMobile(context) ? 250.h : 600.h,
                         autoPlay: true,
                         viewportFraction: 1,
                         onPageChanged: (index, reason) {
@@ -266,11 +267,9 @@ class _ProductDetailsState extends State<ProductDetails> {
                         children:
                             imageUrls.asMap().entries.map((entry) {
                               return Container(
-                                width: 8,
-                                height: 8,
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                ),
+                                width: 5.w,
+                                height: 5.w,
+                                margin: EdgeInsets.symmetric(horizontal: 4.w),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color:
@@ -349,6 +348,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                       Row(
                         children: [
                           Icon(Icons.star, color: Colors.amber),
+                          SizedBox(width: 5.w),
                           Text(product.rating),
                         ],
                       ),
