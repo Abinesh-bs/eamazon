@@ -23,11 +23,19 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     Size designSize = Size(360, 690);
 
-    if (Theme.of(context).platform == TargetPlatform.android ||
-        Theme.of(context).platform == TargetPlatform.iOS) {
+    if (Theme
+        .of(context)
+        .platform == TargetPlatform.android ||
+        Theme
+            .of(context)
+            .platform == TargetPlatform.iOS) {
       designSize = Size(360, 690);
-    } else if (Theme.of(context).platform == TargetPlatform.fuchsia ||
-        Theme.of(context).platform == TargetPlatform.macOS) {
+    } else if (Theme
+        .of(context)
+        .platform == TargetPlatform.fuchsia ||
+        Theme
+            .of(context)
+            .platform == TargetPlatform.macOS) {
       designSize = Size(1440, 900);
     } else {
       designSize = Size(1920, 1080);
@@ -52,7 +60,7 @@ class MyApp extends StatelessWidget {
           builder: (_, child) {
             return MaterialApp(
               debugShowCheckedModeBanner: false,
-              title: 'Flutter Demo',
+              title: 'E-Amazon',
               theme: AppTheme.light(),
               initialRoute: AppRoutes.splash,
               onGenerateRoute: AppRoutes.generateRoutes,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../routes/app_routes.dart';
 import '../utils/shared_preference.dart';
@@ -27,12 +28,23 @@ class _SplashState extends State<Splash> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primary,
-      body: Center(
-        child: Text(
-          "E- Amazon",
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+      body: SafeArea(
+        child: Center(
+          child: Stack(
+            children: [
+              Image.asset(
+                "assets/icons/logo.png",
+                height: 200.h,
+                width: MediaQuery.sizeOf(context).width,
+              ),
+              Text(
+                "E- Amazon",
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+              ),
+            ],
+          ),
         ),
       ),
     );
