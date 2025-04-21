@@ -1,15 +1,34 @@
+import 'dart:convert';
+
 import 'package:e_amazon/utils/shared_preference.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../firebase_options.dart';
+import 'notification_service.dart';
+
+Future<void> _onBackgroundMessage(RemoteMessage message) async {
+  await FirebaseService.initFirebase();
+  await NotificationService().showNotificationCustomSound(
+    message.notification?.title ?? 'Background Message',
+    message.notification?.body ?? 'You have a new message!',
+  );
+}
+
 class FirebaseService {
+  late GlobalKey<NavigatorState> _navigatorKey;
+  final notificationService = NotificationService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _fireStore = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email'],
     clientId:
-    "948737216499-0rlal03tl2q1jld87c41o9j7vub2ppo5.apps.googleusercontent.com",
+        "948737216499-0rlal03tl2q1jld87c41o9j7vub2ppo5.apps.googleusercontent.com",
   );
 
   Future<String> handleGoogleSignIn() async {
@@ -21,7 +40,7 @@ class FirebaseService {
       }
 
       final GoogleSignInAuthentication googleAuth =
-      await googleUser.authentication;
+          await googleUser.authentication;
 
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -63,10 +82,12 @@ class FirebaseService {
     }
   }
 
-  Future<String?> register(String email,
-      String password,
-      String name,
-      String phone,) async {
+  Future<String?> register(
+    String email,
+    String password,
+    String name,
+    String phone,
+  ) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -139,7 +160,7 @@ class FirebaseService {
       'id': productId,
       'name': 'Casio watch',
       "description":
-      "Casio is an electronics manufacturing company that was founded in 1946 by Tadao Kashio. The brand has a versatile portfolio, from musical instruments and digital cameras to analogue and digital watches. The company rose to popularity quickly after releasing its first-ever product, a cigarette holder, which proved to be a huge success. Casio became involved in electronics in 1954 when they released Japan's first electro-mechanical calculator.",
+          "Casio is an electronics manufacturing company that was founded in 1946 by Tadao Kashio. The brand has a versatile portfolio, from musical instruments and digital cameras to analogue and digital watches. The company rose to popularity quickly after releasing its first-ever product, a cigarette holder, which proved to be a huge success. Casio became involved in electronics in 1954 when they released Japan's first electro-mechanical calculator.",
       'price': "29999 ",
       "images": [
         "https://www.casio.com/in/watches/edifice/product.EFB-109D-2AV/",
@@ -147,7 +168,7 @@ class FirebaseService {
         "https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcRw0TYpozfwSQ6adpwck69Lqq350IUoAPwMXmAziR9LR-3cnGJxtOYYI3YdSep-rsgEe5fYSVHOLqNkTOSjHPzADWb0iCY_Ina3IHcA8DfQ",
         "https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcQDjiHN3PJGVIoaHDklkjLrV2BRRMsKywHUDbrPkp1iSB9PPAJ6_VtRU9i-9TFNJBcJsIaBTXa6xjY1mBgBpkzJRng9CtRMZUblxyDscWbdll2JNcT9d_Pz9Q",
       ],
-      'review': 'Light weighted!',
+      'review': '{}',
       'rating': "3.0",
       'specs': {
         'Brand': 'Casio',
@@ -161,6 +182,59 @@ class FirebaseService {
     await docRef.set(product);
   }
 
+  Future<void> addOrUpdateReview({
+    required String productId,
+    required String userId,
+    required String userName,
+    required String review,
+    required String rating,
+  }) async {
+    try {
+      final productRef = _fireStore.collection('products').doc(productId);
+      final productSnapshot = await productRef.get();
+      final productData = productSnapshot.data() as Map<String, dynamic>;
+      final reviews = List<Map<String, dynamic>>.from(
+        productData['reviews'] ?? [],
+      );
+
+      final existingReviewIndex = reviews.indexWhere(
+        (r) => r['userId'] == userId,
+      );
+      final newReview = {
+        'userId': userId,
+        'userName': userName,
+        'review': review,
+        'rating': rating,
+      };
+
+      if (existingReviewIndex != -1) {
+        reviews[existingReviewIndex] = newReview;
+      } else {
+        reviews.add(newReview);
+      }
+
+      final totalRating = reviews.fold<int>(
+        0,
+        (sum, r) => sum + int.parse(r['rating'] as String),
+      );
+      final averageRating =
+          reviews.isEmpty ? 0.0 : totalRating / reviews.length;
+
+      await productRef.update({
+        'reviews': reviews,
+        'rating': averageRating.toString(),
+      });
+
+      await NotificationService().showNotificationCustomSound(
+        'New Review Posted',
+        '$userName rated $rating stars: $review',
+      );
+    } catch (e, stackTrace) {
+      print('Error adding/updating review: $e');
+      print('Stack trace: $stackTrace');
+    }
+  }
+
   Future<void> addHomeData() async {
     /*    final collection = _fireStore.collection('home_data');
 
@@ -170,19 +244,19 @@ class FirebaseService {
     final List<Map<String, dynamic>> homeItems = [
       {
         'image':
-        'https://images-eu.ssl-images-amazon.com/images/G/31/img22/Wireless/devjyoti/GW/Uber/Nov/uber_new_high._CB537689643_.jpg',
+            'https://images-eu.ssl-images-amazon.com/images/G/31/img22/Wireless/devjyoti/GW/Uber/Nov/uber_new_high._CB537689643_.jpg',
       },
       {
         'image':
-        "https://images-eu.ssl-images-amazon.com/images/G/31/OHL/24/BAU/feb/PC_hero_1_2x_1._CB582889946_.jpg",
+            "https://images-eu.ssl-images-amazon.com/images/G/31/OHL/24/BAU/feb/PC_hero_1_2x_1._CB582889946_.jpg",
       },
       {
         'image':
-        'https://images-eu.ssl-images-amazon.com/images/G/31/img22/Events/Schoolfromhome/GWhero/1242x600_Eng._CB661597880_.jpg',
+            'https://images-eu.ssl-images-amazon.com/images/G/31/img22/Events/Schoolfromhome/GWhero/1242x600_Eng._CB661597880_.jpg',
       },
       {
         'image':
-        "https://images-eu.ssl-images-amazon.com/images/G/31/img24/Beauty/Hero/Shampoos__conditioners_pc._CB547405360_.png                                                                                                                                                                                                                                                                                                                                                                                                                                                 ",
+            "https://images-eu.ssl-images-amazon.com/images/G/31/img24/Beauty/Hero/Shampoos__conditioners_pc._CB547405360_.png                                                                                                                                                                                                                                                                                                                                                                                                                                                 ",
       },
     ];
     await addHomeData1(homeItems);
@@ -207,9 +281,11 @@ class FirebaseService {
     }
   }
 
-  Future<void> toggleProductInCollection(String userId,
-      String productId,
-      String collectionName,) async {
+  Future<void> toggleProductInCollection(
+    String userId,
+    String productId,
+    String collectionName,
+  ) async {
     if (productId.isNotEmpty) {
       final productRef = _fireStore
           .collection(collectionName)
@@ -294,12 +370,103 @@ class FirebaseService {
 
   Future<List<String>> getWishlistProductIds(String userId) async {
     final snapshot =
-    await _fireStore
-        .collection('wishlists')
-        .doc(userId)
-        .collection('products')
-        .get();
+        await _fireStore
+            .collection('wishlists')
+            .doc(userId)
+            .collection('products')
+            .get();
 
     return snapshot.docs.map((doc) => doc['productId'] as String).toList();
+  }
+
+  static Future<void> initFirebase() async {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      print('Firebase initialized successfully');
+
+      if (kIsWeb) {
+        try {
+          FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+          NotificationSettings settings = await messaging.requestPermission(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+          print(
+            'Notification permission status: ${settings.authorizationStatus}',
+          );
+
+          String? token = await messaging.getToken(
+            vapidKey:
+                'BH4gyMplFndEz4ez-u2lu3EWgc7HsKCtt-rE2p3rOL0nN0QupuhmZ8o3flHBeY0gRlw5d3aTnCBp6ZQnazbNHoc', // Optional, see step 4
+          );
+          if (token != null) {
+            SharedPreferenceHelper.setFirebaseToken(token);
+            print('Web FCM Token: $token');
+          }
+
+          messaging.onTokenRefresh
+              .listen((token) async {
+                SharedPreferenceHelper.setFirebaseToken(token);
+                print('Refreshed Web FCM Token: $token');
+              })
+              .onError((error) {
+                print('Error in onTokenRefresh: $error');
+              });
+
+          FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+            print(
+              'Received foreground message: ${message.notification?.title}',
+            );
+            // Show notification or update UI
+          });
+        } catch (e, stackTrace) {
+          print('Error setting up Firebase Messaging on web: $e');
+          print('Stack trace: $stackTrace');
+        }
+      } else {
+        try {
+          FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+          await messaging.requestPermission(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+
+          String? token = await messaging.getToken();
+          if (token != null) {
+            SharedPreferenceHelper.setFirebaseToken(token);
+            print('Native FCM Token: $token');
+          }
+
+          messaging.onTokenRefresh
+              .listen((token) async {
+                SharedPreferenceHelper.setFirebaseToken(token);
+              })
+              .onError((error) {});
+        } catch (e, stackTrace) {}
+      }
+    } catch (e, stackTrace) {}
+  }
+
+  Future<void> _onForegroundMessage(RemoteMessage message) async {
+    print("object5sa45s4");
+    print(message.notification!.title);
+    print(jsonEncode(message.data));
+    notificationService.showNotificationCustomSound(
+      message.notification!.title,
+      message.notification!.body,
+    );
+  }
+
+  handleFirebaseEvents(GlobalKey<NavigatorState> navigatorKey) {
+    _navigatorKey = navigatorKey;
+    FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
+    FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+    // FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpened);
   }
 }

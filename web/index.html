@@ -39,6 +39,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js"></script>
 <script>
     const firebaseConfig = {
     apiKey: 'AIzaSyDFFTa5H5BE1Z_xzq3F0DNTM8AxL2ZmvF4',
@@ -50,6 +51,18 @@
     measurementId: 'G-Z37HQM74BZ',
     };
     firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
+    messaging.onBackgroundMessage((payload) => {
+  console.log('[firebase-messaging-sw.js] Received background message: ', payload);
+  // Customize notification here
+  const notificationTitle = payload.notification?.title || 'Background Message';
+  const notificationOptions = {
+    body: payload.notification?.body || 'You have a new message!',
+    icon: '/flutter_logo.png', // Optional: Add an icon (place in web/ directory)
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
 </script>
 </body>
 </html>

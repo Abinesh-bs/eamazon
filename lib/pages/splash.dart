@@ -14,8 +14,9 @@ class Splash extends StatefulWidget {
 class _SplashState extends State<Splash> {
   @override
   void initState() {
+    String? userId = SharedPreferenceHelper.getUserId() ?? "";
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (SharedPreferenceHelper.getUserId() == null) {
+      if (userId.isEmpty) {
         Navigator.pushReplacementNamed(context, AppRoutes.login);
       } else {
         Navigator.popAndPushNamed(context, AppRoutes.home);
@@ -27,7 +28,7 @@ class _SplashState extends State<Splash> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.primary,
+      // backgroundColor: Theme.of(context).colorScheme.primary,
       body: SafeArea(
         child: Center(
           child: Stack(

@@ -7,8 +7,8 @@ class ProductModel {
   final String categoryId;
   final String categoryName;
   final Map<String, String>? specs;
-  final String review;
   final String rating;
+  final List<Review>? reviews;
 
   ProductModel({
     required this.id,
@@ -19,7 +19,7 @@ class ProductModel {
     required this.categoryId,
     required this.categoryName,
     this.specs,
-    required this.review,
+    this.reviews,
     required this.rating,
   });
 
@@ -41,6 +41,7 @@ class ProductModel {
     final specs = specsData?.map(
       (key, value) => MapEntry(key, value.toString()),
     );
+    final reviewsData = List<Map<String, dynamic>>.from(data['reviews'] ?? []);
 
     return ProductModel(
       id: documentId,
@@ -51,7 +52,8 @@ class ProductModel {
       categoryId: categoryId,
       categoryName: categoryName,
       specs: specs,
-      review: data['review']?.toString() ?? '',
+      reviews: reviewsData.map((r) => Review.fromMap(r)).toList(),
+      //review: data['review']?.toString() ?? '',
       rating: data['rating'],
     );
   }
@@ -65,8 +67,32 @@ class ProductModel {
       'images': images,
       'category': {categoryId: categoryName},
       'specs': specs,
-      'review': review,
+      'reviews': reviews,
+      //'review': review,
       'rating': rating,
     };
+  }
+}
+
+class Review {
+  final String userId;
+  final String userName;
+  final String review;
+  final String rating;
+
+  Review({
+    required this.userId,
+    required this.userName,
+    required this.review,
+    required this.rating,
+  });
+
+  factory Review.fromMap(Map<String, dynamic> data) {
+    return Review(
+      userId: data['userId'] ?? '',
+      userName: data['userName'] ?? '',
+      review: data['review'] ?? '',
+      rating: data['rating'] ?? '',
+    );
   }
 }
