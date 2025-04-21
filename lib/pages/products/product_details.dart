@@ -325,7 +325,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                         ),
 
                         if (specs != null) ...[
-                          Divider(color: Colors.grey.shade400, height: 20.h),
+                          Divider(color: Colors.grey.shade400, height: 30.h),
 
                           Container(
                             padding: EdgeInsets.symmetric(vertical: 8.h),
@@ -466,7 +466,8 @@ class _ProductDetailsState extends State<ProductDetails> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Divider(color: Colors.grey.shade400, height: 20.h),
+        Divider(color: Colors.grey.shade400, height: 30.h),
+
         Text(
           "Reviews (${reviews.length})",
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
