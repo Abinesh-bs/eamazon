@@ -502,8 +502,9 @@ class _ProductDetailsState extends State<ProductDetails> {
             ),
           ],
         ),
+        SizedBox(height: 5.h),
         Container(
-          margin: EdgeInsets.symmetric(vertical: 5.h),
+          margin: EdgeInsets.symmetric(vertical: 8.h),
           padding: EdgeInsets.symmetric(horizontal: 8.h, vertical: 8.h),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
